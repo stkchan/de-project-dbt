@@ -120,7 +120,7 @@ This project I uses **Databricks Free Community Edition** as the main platform f
     
 
 
-### 2️⃣ DBT Extensions
+### 2️⃣ DBT Extension
 his project uses the **dbt Power User** extension in VS Code to simplify dbt development.
 
 #### What it is
@@ -142,7 +142,68 @@ The **dbt Power User** extension provides helpful features like:
 
 ### 3️⃣ DBT Project Setup
 _Define project configuration, structure, and basic workflows._
-- Initialize dbt project using `dbt init`.  
+
+#### Initialize dbt Project
+1. Run the following command in terminal:
+    ```bash
+    dbt init
+    ```
+2. Select database adapter
+    - This might be choices: Depends on what databased installed
+         ```css
+        Which database would you like to use?
+        [1] databricks
+        [2] spark
+        [3] postgres
+        [4] bigquery
+        ```
+    - Type **1** and press Enter to choose **Databricks**.
+
+3. Select compute host in databricks
+    - Go to **Databricks** > `Compute` section > Select computer cluster
+    - Go to `Connection details` > Copy value in `Server hostname` and `HTTP Path`
+    - `Access Token` → generated from `User Settings` > `Developer` > `Access Tokens`
+    - Paste the value in terminal
+        ```css
+        host (yourorg.databricks.com): <value from `Server hostname`>
+        http_path (HTTP Path): <value from `HTTP Path`>
+        Desired access token option (enter a number): 1
+        token (dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX): <Access Token>
+        ```
+4. Specify use or not use `Unity Catalog` & initial catalog
+    ```css
+        Which database would you like to use?
+        [1] use Unity Catalog
+        [2] not use Unity Catalog
+        Desired unity catalog option (enter a number):
+        catalog (initial catalog): <catalog name>
+    ```
+    - Type **1** and press Enter to choose use **Unity Catalog**.
+    - Type catalog name e.g. `dbt_dev`
+
+5. Specify `default schema` & `threads`
+    ```css
+        schema (default schema that dbt will build objects in): default
+        threads (1 or more) [1]: 1
+    ```
+6. Navigate into project directory
+    ```bash
+    cd de_project_dbt
+    ```
+7. Verify the connection to Databricks
+    ```bash
+    dbt debug
+    ```
+    This command checks whether dbt can successfully connect to Databricks workspace.
+    We should see messages like:
+    
+    ```bash
+    Connection test: ✅ [OK Connection ok]
+
+    All checks passed!
+    ```
+
+
 - Edit `dbt_project.yml` to define paths (models, macros, tests, seeds).  
 - Set default schemas for Bronze, Silver, and Gold layers.  
 - Create folder structure for models and data layers.  
