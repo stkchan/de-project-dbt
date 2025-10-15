@@ -30,11 +30,96 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
 ## Steps of Each Process
 
 ### 1️⃣ Environment Setup
-_Set up your local or virtual environment to run dbt efficiently._
-- Create and activate a Python virtual environment.  
-- Install dbt-core and Databricks adapter (e.g., `dbt-databricks`).  
-- Verify installation using `dbt --version`.  
-- Configure connection credentials securely (Databricks token, catalog, schema, etc.).  
+_Set up local environment to run dbt with the Databricks Free Community Edition._
+
+#### Step 1. Install Python and `uv`
+- Install [`uv`](https://github.com/astral-sh/uv) — a **fast Python package and virtual environment manager** (an alternative to `pip` and `venv`).
+  ```bash
+    pip install uv
+  ```
+  - `uv` is used in this project because:
+    -   It creates and manages Python environments extremely fast (uv venv .venv).
+    -   It installs packages (like dbt-core) quicker than pip using compiled wheels.
+    -   It keeps dependencies clean and consistent across different machines.
+
+- Type `uv init` in terminal
+  This will:
+    - Generate a default pyproject.toml (like package.json for Python)
+    - Create and activate a .venv
+    - Set up a minimal structure for dependency managemen
+
+- Activate `Virtual Environment` using `Git Bash`
+  ```bash
+    source .venv/Scripts/activate
+  ```
+
+- Add dbt Packages with uv - This command both installs the packages and automatically records them in `pyproject.toml` - so no longer need a manual `requirements.txt` file.
+  ```bash
+    uv add dbt-core dbt-databricks
+  ```
+  This will:
+    -   Install `dbt-core` - the command-line tool used for data transformation, testing, and documentation.
+    -   Install `dbt-databricks` - the adapter that connects dbt with Databricks SQL Warehouse or Cluster.
+    -   Update `pyproject.toml` file to include both dependencies with exact versions
+  Example output in pyproject.toml file after running the command:
+    ```bash
+    [project]
+    name = "de-project-dbt"
+    dependencies = [
+        "dbt-core>=1.10.0",
+        "dbt-databricks>=1.10.0"
+    ]
+    ```
+
+    ```bash
+    uv pip freeze > requirements.txt
+    ```
+
+#### Step 2. Open Databricks Free Community Edition
+
+This project uses **Databricks Free Community Edition** as the development and execution environment for running dbt models.
+
+Follow the steps below to create free workspace:
+
+1. **Go to the official signup page**  
+   👉 [https://community.cloud.databricks.com/](https://community.cloud.databricks.com/)
+
+2. **Create your account**  
+   - Sign up with your email address and verify it.  
+   - Once verified, you’ll be redirected to your Databricks workspace.
+
+3. **Log in to your workspace**  
+   - You’ll see the Databricks UI, including the **Sidebar**, **Workspace**, and **Compute** sections.  
+   - The **Workspace** is where you can manage notebooks, data, clusters, and SQL queries.  
+
+4. **Create or start a cluster**  
+   - In the left sidebar, click **Compute → Create Cluster**.  
+   - Give it a simple name like `dbt-demo-cluster`.  
+   - Leave the default settings (e.g., “Community Edition Spark 3.4” runtime) and click **Create Cluster**.  
+   - Wait until the cluster state changes from `Pending` → `Running`.
+
+5. **Collect connection details**  
+   You’ll need these later when configuring your dbt profile:
+   - **Host**: e.g., `https://community.cloud.databricks.com`  
+   - **HTTP Path**: Found under **Compute → Your Cluster → Connection Details → Advanced (JDBC/ODBC)**  
+   - **Access Token**: Generate via **User Settings → Access Tokens → Generate New Token**
+
+6. **Keep your workspace active**  
+   - The Community Edition cluster automatically terminates after ~2 hours of inactivity.  
+   - Restart the cluster before running new dbt commands if it’s stopped.
+
+> 💡 **Tip:** Bookmark your workspace URL so you can quickly return to it.  
+> It usually looks like:  
+> `https://community.cloud.databricks.com/?o=<your-org-id>`
+
+---
+
+After setting up your Databricks workspace and cluster, proceed to the next step to **install dbt packages** and configure your connection.
+
+Next step:  
+👉 [3️⃣ Add dbt Packages with uv](#3️⃣-add-dbt-packages-with-uv)
+
+    
 
 ---
 
