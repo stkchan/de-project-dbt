@@ -203,10 +203,119 @@ _Define project configuration, structure, and basic workflows._
     All checks passed!
     ```
 
+#### Checking files profiles.yml & dbt_project.yml
+1. What is `profiles.yml`
+    profiles.yml is dbt connection configuration file — it tells dbt how to connect to database or data warehouse (Databricks, BigQuery, Postgres, etc.).
 
-- Edit `dbt_project.yml` to define paths (models, macros, tests, seeds).  
-- Set default schemas for Bronze, Silver, and Gold layers.  
-- Create folder structure for models and data layers.  
+    **Location**
+    By default, dbt looks for it here:
+
+    ```bash
+    ~/.dbt/profiles.yml
+    ```
+    On Windows
+
+    ```bash
+    C:\Users\<your-username>\.dbt\profiles.yml
+    ```
+
+    Example `profiles.yml` for Databricks
+    ```bash
+    de_project_dbt:  # must match the 'profile:' value in dbt_project.yml
+        target: dev
+        outputs:
+            dev:
+            type: databricks
+            catalog: dbt_dev
+            schema: source
+            host: adb-1234567890123456.7.azuredatabricks.net
+            http_path: /sql/1.0/warehouses/abcd1234efgh5678
+            token: dapiXXXXXXXXXXXXXXXXXXXXXXXX
+            threads: 1
+    ```
+    🔹 Key points:
+
+    - `type`: must match database adapter (e.g., `databricks`, `bigquery`, `postgres`).
+
+    - `catalog` and `schema`: define where dbt will create tables/views.
+
+    - `token`, `host`, and `http_path`: come from Databricks workspace.
+
+    - `threads`: controls parallelism (1 for local, 4–8 for production).
+
+
+2. What is `dbt_project.yml`
+    This file lives inside dbt project folder e.g. `/de_project_dbt/`.
+
+    It defines:
+
+    - The project name
+    - Which profile from `profiles.yml` to use
+    - File/folder structure for models, macros, tests, etc.
+    - Default materialization (table/view)
+
+    Example `dbt_project.yml`
+
+    ```bash
+        name: 'de_project_dbt'  # project name
+        version: '1.0.0'
+
+        profile: 'de_project_dbt'  # must match the key in profiles.yml
+
+        model-paths: ["models"]
+        analysis-paths: ["analyses"]
+        test-paths: ["tests"]
+        seed-paths: ["seeds"]
+        macro-paths: ["macros"]
+        snapshot-paths: ["snapshots"]
+
+        models:
+        de_project_dbt:
+            bronze:
+            +schema: bronze
+            +materialized: table
+            silver:
+            +schema: silver
+            +materialized: table
+            gold:
+            +schema: gold
+            +materialized: table
+    ```
+
+    The most important match is:
+    ```bash
+        profile: 'de_project_dbt'
+    ```
+    in `dbt_project.yml`
+    must match the top-level key in `profiles.yml`: 
+    ```bash
+        de_project_dbt:
+    ```
+    Otherwise, dbt will say:
+    `Could not find profile named 'de_project_dbt'`
+
+#### Delete "models/example" folder and Create "bronze", "silver", "gold" folders in models folder
+1. Delete the default example folder
+    ```bash
+        rm -r models/example
+    ```
+2. Create 3 new folders in `models/`
+    ```bash
+        mkdir models/bronze models/silver models/gold
+    ```
+    Folder structure:
+
+    ```
+    de_project_dbt/
+    ├── models/
+    │   ├── bronze/
+    │   ├── silver/
+    │   └── gold/
+    ```
+
+
+
+
 
 ---
 
