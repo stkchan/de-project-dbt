@@ -88,13 +88,37 @@ This project I uses **Databricks Free Community Edition** as the main platform f
    - Sign up or Login with email account and verify it.  
    - Once completed, the website will be redirected to Databricks workspace.
 
-3. **Log in to your workspace**  
-   - You’ll see the Databricks UI, including the **Sidebar**, **Workspace**, and **Compute** sections.  
-   - The **Workspace** is where you can manage notebooks, data, clusters, and SQL queries.  
+3. **Log in to our workspace**  
+   - We will see the Databricks UI, including the **Workspace**, **Catalog**, **Jobs & Pipelines**, and **Compute** sections.  
+   - The **Workspace** is where we can manage notebooks, data, clusters, and SQL queries.  
 
-    
+4. **Create a new Catalog and Schema**  
+   In the Databricks **Catalog**:
+   - Create a new **Catalog** named **`dbt_dev`**.  
+   - In this catalog, create a new **Schema** named **`source`** — this schema will store ourr raw data files (CSV format).
+
+5. **Upload CSV data into the `source` schema**  
+   - Go to **Catalog → dbt_dev → source → Add → Upload Data**.  
+   - Upload all 6 CSV files from local `data` folder:  
+     ```
+     dim_customer.csv  
+     dim_date.csv  
+     dim_product.csv  
+     dim_store.csv  
+     fact_returns.csv  
+     fact_sales.csv
+     ```
+   - Databricks will automatically create tables from each CSV file in `source` schema.
+
+6. **Verify data upload**  
+   - Use the Databricks SQL Editor to confirm each table was created successfully:  
+     ```sql
+     SELECT COUNT(*) FROM dbt_dev.source.fact_sales;
+     ```
 
 ---
+    
+
 
 ### 2️⃣ DBT Extensions
 _Set up VS Code extensions and configuration for dbt development._
