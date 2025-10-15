@@ -121,12 +121,23 @@ This project I uses **Databricks Free Community Edition** as the main platform f
 
 
 ### 2️⃣ DBT Extensions
-_Set up VS Code extensions and configuration for dbt development._
-- Install **dbt Power User** and **SQLFluff** extensions in VS Code.  
-- Configure interpreter to use the project’s virtual environment (`.venv`).  
-- Enable dbt commands and auto-completion in the VS Code Command Palette.  
-- (Later: include screenshots or keyboard shortcuts if needed.)
+his project uses the **dbt Power User** extension in VS Code to simplify dbt development.
 
+#### What it is
+The **dbt Power User** extension provides helpful features like:
+- Running and testing dbt models directly from VS Code.  
+- Viewing model lineage and dependencies.  
+- Syntax highlighting and autocomplete for dbt commands.
+
+#### Installation Steps
+1. Open VS Code.  
+2. Go to **Extensions** (`Ctrl + Shift + X`).  
+3. Search for **dbt Power User**.  
+4. Click **Install**.  
+5. After installation, select `Virtual Environment` (`.venv`) as Python interpreter to enable dbt commands.
+6. In **Associate File Types** config setup
+    - **Item** = `*.sql` and **Value** = `jinja-sql`
+    - **Item** = `*.yml` and **Value** = `jinja-yaml`
 ---
 
 ### 3️⃣ DBT Project Setup
