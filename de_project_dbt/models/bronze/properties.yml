@@ -18,6 +18,10 @@ models:
           - unique
           - not_null
 
+      - name: gross_amount
+        tests:
+          - generic_non_negative
+
   - name: bronze_dim_store
     columns:
       - name: store_sk
