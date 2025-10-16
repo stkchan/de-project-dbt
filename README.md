@@ -27,6 +27,199 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
 
 ---
 
+## Important dbt Files Overview
+
+1. `macros/` Folder
+    **Purpose:**  
+    Macros in dbt are reusable SQL/Jinja functions — similar to functions in programming.  
+    They allow us to define logic once and use it across multiple models or tests.
+
+    **File in this project:**  
+    `macros/generate_schema_name.sql`
+
+    ```sql
+        {% macro generate_schema_name(custom_schema_name, node) -%}
+
+            {%- set default_schema = target.schema -%}
+            {%- if custom_schema_name is none -%}
+                {{ default_schema }}
+            {%- else -%}
+                {{ custom_schema_name | trim }}
+            {%- endif -%}
+
+        {%- endmacro %}
+    ```
+
+    **Explanation:** 
+
+    -   This macro controls how dbt decides which schema to create models in.
+
+    -   If a model doesn’t specify a schema explicitly, it defaults to the one in our target (from our connection profile).
+
+    -   Otherwise, it uses the provided custom schema name (e.g., `bronze`, `silver`, or `gold`).
+
+    **Use case:** 
+    Helps organize models by Medallion layer — ensuring `bronze` models go to the `bronze` schema, `silver` to `silver`, etc.
+
+    **Reference:** [`DBT Macros Documentation`](https://docs.getdbt.com/docs/build/jinja-macros)
+---
+2. `properties.yml` (inside `models/bronze/`)
+
+    **Purpose:**
+    Defines **metadata**, **tests**, and **configurations** for our models and columns.
+    It connects our SQL models (like **bronze_sales.sql**) with dbt tests and documentation.
+
+    **Example:**
+
+    ```ymal
+        version: 2
+
+        models:
+        - name: bronze_sales
+            columns:
+            - name: sales_id
+                tests:
+                - unique
+                - not_null
+
+            - name: gross_amount
+                tests:
+                - generic_non_negative
+
+        - name: bronze_dim_store
+            columns:
+            - name: store_sk
+                tests:
+                - unique
+                - not_null
+            - name: store_name
+                tests:
+                - accepted_values:
+                    values: ['MegaMart Manhattan', 'MegaMart Brooklyn', 'MegaMart Austin', 'MegaMart San Jose', 'MegaMart Toronto']
+                    config:
+                        severity: warn
+    ```
+    **Explanation:**
+
+    -   Each model (`bronze_sales`, `bronze_dim_store`) maps to a `.sql` file in the same folder.
+
+    -   Column-level tests check for:
+
+        -   Data uniqueness
+
+        -   Null values
+
+        -   Value validation (accepted list)
+
+        -   Custom logic tests like `generic_non_negative`
+
+    **Reference:** [`DBT Schema Tests`](https://docs.getdbt.com/docs/build/data-tests)
+
+---
+
+3. `sources.yml` (inside `models/source/`)
+
+    **Purpose:**
+    Registers raw data sources (e.g., tables or CSVs loaded into Databricks) so dbt can reference them safely using the `{{ source() }}` function.
+
+    **Example:**
+
+    ```ymal
+
+        version: 2
+
+        sources:
+        - name: source
+            description: "Raw data tables loaded from CSV files into Databricks"
+            database: dbt_dev 
+            schema: source
+            tables:
+            - name: fact_sales
+                description: "Fact Table: Sales"
+            - name: dim_store
+                description: "Dimension Table: Store"
+    ```
+
+    **Usage in a model:**
+    ```sql
+        SELECT *
+        FROM {{ source('source', 'fact_sales') }}
+    ```
+    
+    **Explanation:**
+
+    -   The first argument `source` refers to the `name` under sources:.
+
+    -   The second argument `fact_sales` refers to the specific table name.
+
+    -   This ensures dbt tracks lineage (we can see how data flows from `raw` → `bronze` → `silver` → `gold`).
+
+    **Reference:** [`DBT Sources Documentation`](https://docs.getdbt.com/docs/build/sources)
+
+---
+
+4. `dbt_project.yml`
+
+    **Purpose:**
+    The main configuration file of our dbt project — defines the project structure, default behaviors, and environment paths.
+
+    **Example:**
+
+    ```ymal
+        name: 'de_project_dbt'
+        version: '1.0.0'
+        profile: 'de_project_dbt'
+
+        model-paths: ["models"]
+        macro-paths: ["macros"]
+        seed-paths: ["seeds"]
+
+        clean-targets:
+        - "target"
+        - "dbt_packages"
+
+        models:
+        de_project_dbt:
+            bronze:
+            +materialized: table
+            schema: bronze
+            silver:
+            +materialized: table
+            schema: silver
+            gold:
+            +materialized: table
+            schema: gold
+    ```
+    **Explanation:**
+
+    -   `profile:` links this project to a profile defined in our `profiles.yml` (where connection credentials are stored).
+
+    -   `model-paths`, `macro-paths`, etc. tell dbt where to find files.
+
+    -   `clean-targets:` defines which folders are deleted by `dbt clean`.
+
+    -   Under `models:`, each folder (bronze/silver/gold) specifies its materialization type and schema name.
+
+    **Connection Context (for this project):**
+    -   We are using Databricks Free Edition.
+    -   Our profiles.yml (created automatically after dbt init) includes:
+
+    ```ymal
+        de_project_dbt:
+            outputs:
+                dev:
+                type: databricks
+                catalog: dbt_dev
+                schema: bronze
+                host: https://<your-workspace>.cloud.databricks.com
+                http_path: /sql/1.0/warehouses/<warehouse-id>
+                token: <your-personal-access-token>
+            target: dev
+    ```
+    **Reference:** [`DBT Project Configuration`](https://docs.getdbt.com/reference/dbt_project.yml)
+
+---
+
 ## Steps of Each Process
 
 ### 1️⃣ Environment Setup
@@ -296,7 +489,7 @@ _Define project configuration, structure, and basic workflows._
 
 
     ### What is `materialized` in dbt?
-    The `+materialized`: setting tells dbt **how to create and store your model** in your database or data warehouse (Databricks, BigQuery, Snowflake, etc.).
+    The `+materialized`: setting tells dbt **how to create and store our model** in our database or data warehouse (Databricks, BigQuery, Snowflake, etc.).
 
     #### Common Materialization Types
 
@@ -329,9 +522,6 @@ _Define project configuration, structure, and basic workflows._
     │   ├── silver/
     │   └── gold/
     ```
-
-
-
 
 
 ---
@@ -428,7 +618,7 @@ _Define and register data sources for dbt models._
     dbt source list
    ```
 
-   Check freshness (optional, works only if you define loaded_at_field in your sources.yml):
+   Check freshness (optional, works only if we define loaded_at_field in our sources.yml):
   
    ```bash
     dbt source freshness
@@ -454,15 +644,15 @@ Each layer builds upon the previous one — dbt compiles SQL files inside `model
 
 | Command | Description | Example |
 |----------|--------------|----------|
-| **`dbt run`** | Executes all models in your project based on dependencies and configurations. | `dbt run` |
+| **`dbt run`** | Executes all models in our project based on dependencies and configurations. | `dbt run` |
 | **`dbt run --select <path>`** | Runs only models within a specific folder path (e.g., Bronze layer). | `dbt run --select models/bronze` |
 | **`dbt run --select <model_name>`** | Runs a single model by name. | `dbt run --select bronze_dim_customer` |
 | **`dbt test`** | Runs all tests defined in `.yml` or `.sql` test files. | `dbt test` |
 | **`dbt build`** | **Runs models, tests, snapshots, and seeds together** — all in dependency order. It’s an all-in-one command that ensures the entire project builds cleanly. | `dbt build` |
 | **`dbt build --select <path>`** | Builds and tests only the selected layer or model. | `dbt build --select models/bronze` |
 | **`dbt build --select <model_name>`** | Builds and tests a specific model and its dependencies. | `dbt build --select bronze_sales` |
-| **`dbt debug`** | Checks if dbt can connect to the warehouse and verifies your configuration. | `dbt debug` |
-| **`dbt clean`** | Deletes temporary folders (`target/`, `dbt_packages/`) to reset your workspace. | `dbt clean` |
+| **`dbt debug`** | Checks if dbt can connect to the warehouse and verifies our configuration. | `dbt debug` |
+| **`dbt clean`** | Deletes temporary folders (`target/`, `dbt_packages/`) to reset our workspace. | `dbt clean` |
 
 ---
 
@@ -471,9 +661,9 @@ Each layer builds upon the previous one — dbt compiles SQL files inside `model
 After every dbt command (like `dbt run` or `dbt compile`), dbt generates compiled SQL code and logs inside the **`target/`** folder.
 
 This folder contains:
-- `compiled/` → the actual SQL files dbt sends to your warehouse.  
-- `run/` → results of your last run (successful and failed models).  
-- `manifest.json` → metadata about your project (used by dbt docs).  
+- `compiled/` → the actual SQL files dbt sends to our warehouse.  
+- `run/` → results of our last run (successful and failed models).  
+- `manifest.json` → metadata about our project (used by dbt docs).  
 
 Example structure after running dbt:
 ```bash
@@ -490,12 +680,12 @@ de_project_dbt/
 #### What is `dbt clean`?
 `dbt clean` is used to remove temporary build files and ensure a clean environment.
 
-When you run:
+When we run:
 
 ```bash
     dbt clean
 ```
-dbt deletes folders defined under clean-targets in your dbt_project.yml, such as:
+dbt deletes folders defined under clean-targets in our dbt_project.yml, such as:
 ```yml
     clean-targets:
         - "target"
@@ -503,11 +693,11 @@ dbt deletes folders defined under clean-targets in your dbt_project.yml, such as
 ```
 This helps when:
 
--   You switch between environments or branches.
+-   We switch between environments or branches.
 
--   You need to reset compiled code and logs.
+-   We need to reset compiled code and logs.
 
--   You want to avoid old manifest conflicts or cache issues.
+-   We want to avoid old manifest conflicts or cache issues.
 
 #### Typical Workflow
 ```bash
@@ -530,6 +720,11 @@ This helps when:
 **Reference:**
 -   [DBT Command Reference](https://docs.getdbt.com/docs/build/sources)
 -   [DBT Clean Command](https://docs.getdbt.com/reference/commands/clean)
+
+
+
+
+
 
 
 
