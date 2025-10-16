@@ -273,16 +273,16 @@ _Define project configuration, structure, and basic workflows._
         de_project_dbt:
             bronze:
             +schema: bronze
-            +materialized: table
+            +materialized: table  # Other options: views, table, incremental, ephemeral
             silver:
             +schema: silver
-            +materialized: table
+            +materialized: table  # Other options: views, table, incremental, ephemeral
             gold:
             +schema: gold
-            +materialized: table
+            +materialized: table  # Other options: views, table, incremental, ephemeral
     ```
 
-    The most important match is:
+    **The most important match is:**
     ```bash
         profile: 'de_project_dbt'
     ```
