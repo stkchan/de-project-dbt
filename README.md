@@ -294,6 +294,23 @@ _Define project configuration, structure, and basic workflows._
     Otherwise, dbt will say:
     `Could not find profile named 'de_project_dbt'`
 
+
+    ### What is `materialized` in dbt?
+    The `+materialized`: setting tells dbt **how to create and store your model** in your database or data warehouse (Databricks, BigQuery, Snowflake, etc.).
+
+    #### Common Materialization Types
+
+    | Materialization | Description | When to Use |
+    |-----------------|--------------|--------------|
+    | **`view`** | Creates a **view** (virtual table) that runs the SQL query every time it’s accessed. | Use when data is small or changes frequently — lightweight, no storage. |
+    | **`table`** | Creates a **physical table** by running the SQL and saving results. | Use for stable or heavy queries; faster to query but takes up storage. |
+    | **`incremental`** | Loads data **only for new or updated rows**, rather than rebuilding the whole table. | Use for large datasets where full refresh is expensive. |
+    | **`ephemeral`** | Doesn’t create a table or view; used **only within other models** (like a subquery). | Use for intermediate logic — improves performance during joins. |
+
+    📘 **Reference:** [dbt Documentation — Materializations](https://docs.getdbt.com/docs/build/materializations)
+
+
+
 #### Delete "models/example" folder and Create "bronze", "silver", "gold" folders in models folder
 1. Delete the default example folder
     ```bash

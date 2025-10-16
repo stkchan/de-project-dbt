@@ -33,7 +33,7 @@ models:
   de_project_dbt:
     # Config indicated by + and applies to all files under models/example/
     bronze:
-      +materialized: table
+      +materialized: table # Other options: views, table, incremental, ephemeral
       schema: bronze
 
     silver:
