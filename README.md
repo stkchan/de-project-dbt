@@ -321,10 +321,106 @@ _Define project configuration, structure, and basic workflows._
 
 ### 4️⃣ DBT Source
 _Define and register data sources for dbt models._
-- Create `sources.yml` file to define CSVs or tables.  
-- Tag each source (e.g., `bronze` layer) and configure column metadata.  
-- Use the `{{ source('schema', 'table_name') }}` macro in models.  
-- Validate using `dbt source freshness` (if applicable).  
+1. Create `sources.yml`
+    Example structure of the `sources.yml` file:
+    ```yaml
+    version: 2
+
+    sources:
+    - name: source              # schema name in Databricks
+        description: "Raw data tables loaded from CSV files into Databricks"
+        database: dbt_dev       # catalog name
+        schema: source          # schema name
+        tables:
+        - name: fact_sales
+          description: "Fact Table: Sales"
+        - name: fact_returns
+          description: "Fact Table: Returns"
+        - name: dim_date
+          description: "Dimension Table: Date"
+        - name: dim_customer
+          description: "Dimension Table: Customer"
+        - name: dim_product
+          description: "Dimension Table: Product"
+        - name: dim_store
+          description: "Dimension Table: Store"
+    ```
+    Reference: [Add sources to DAG](https://docs.getdbt.com/docs/build/sources)
+
+2. Create Bronze Models
+   Create the following SQL files in models/bronze folder:
+   ```
+    bronze/
+    ├── bronze_dim_customer.sql
+    ├── bronze_dim_date.sql
+    ├── bronze_dim_product.sql
+    ├── bronze_dim_store.sql
+    ├── bronze_returns.sql
+    └── bronze_sales.sql
+   ```
+   Each file selects data directly from its source table.
+   For example:
+
+   ```sql
+   -- models/bronze/bronze_returns.sql
+    SELECT
+        *
+    FROM
+        {{ source('source', 'fact_returns') }}
+   ```
+
+   ```sql
+   -- models/bronze/bronze_dim_customer.sql
+    SELECT
+        *
+    FROM
+        {{ source('source', 'dim_customer') }}
+   ```
+
+   Understanding `{{ source('source', 'table_name') }}`
+
+   The `{{ source() }}` function is a Jinja macro provided by dbt that safely references source tables defined in `sources.yml`.
+
+   Syntax:
+
+   ```sql
+    {{ source('schema_name_in_sources_yml', 'table_name') }}
+   ```
+
+   So in example:
+
+   ```sql
+    {{ source('source', 'fact_returns') }}
+   ```
+   means:
+
+   - `"source"` → the schema (or source name) defined in sources.yml.
+
+   - `"fact_returns"` → the table inside that schema.
+
+   dbt automatically resolves this to full Databricks location:
+   ```sql
+    dbt_dev.source.fact_returns
+   ```
+
+3. Run dbt source commands
+
+   List all defined sources:
+ 
+   ```bash
+    dbt source list
+   ```
+
+   Check freshness (optional, works only if you define loaded_at_field in your sources.yml):
+  
+   ```bash
+    dbt source freshness
+   ```
+
+   Dont Forget activate `Virtual Environment` before running these two commands:
+   ```bash
+   source .venv/Scripts/activate
+   ```
 
 ---
 

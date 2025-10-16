@@ -2,12 +2,19 @@ version: 2
 
 sources:
   - name: source
+    description: "Raw data tables loaded from CSV files into Databricks"
     database: dbt_dev 
     schema: source
     tables:
       - name: fact_sales
+        description: "Fact Table: Sales"
       - name: fact_returns
+        description: "Fact Table: Returns"
       - name: dim_date
+        description: "Dimension Table: Date"
       - name: dim_customer
+        description: "Dimension Table: Customer"
       - name: dim_product
+        description: "Dimension Table: Product"
       - name: dim_store
+        description: "Dimension Table: Store"
