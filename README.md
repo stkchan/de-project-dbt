@@ -443,11 +443,95 @@ _Define and register data sources for dbt models._
 
 ### 5️⃣ DBT Model
 _Create transformation logic for each Medallion layer._
-- Develop `bronze`, `silver`, and `gold` SQL models.  
-- Use CTEs for clarity and modularity.  
-- Apply schema mapping, joins, and calculations.  
-- Configure materialization type (`view` or `table`) per layer in `dbt_project.yml`.  
-- Run all transformations using `dbt run`.  
+
+In this step, We will create and run transformation models for the **Bronze**, **Silver**, and **Gold** layers.
+
+Each layer builds upon the previous one — dbt compiles SQL files inside `models/` and runs them in our Databricks environment.
+
+---
+
+#### Common dbt Commands
+
+| Command | Description | Example |
+|----------|--------------|----------|
+| **`dbt run`** | Executes all models in your project based on dependencies and configurations. | `dbt run` |
+| **`dbt run --select <path>`** | Runs only models within a specific folder path (e.g., Bronze layer). | `dbt run --select models/bronze` |
+| **`dbt run --select <model_name>`** | Runs a single model by name. | `dbt run --select bronze_dim_customer` |
+| **`dbt test`** | Runs all tests defined in `.yml` or `.sql` test files. | `dbt test` |
+| **`dbt build`** | **Runs models, tests, snapshots, and seeds together** — all in dependency order. It’s an all-in-one command that ensures the entire project builds cleanly. | `dbt build` |
+| **`dbt build --select <path>`** | Builds and tests only the selected layer or model. | `dbt build --select models/bronze` |
+| **`dbt build --select <model_name>`** | Builds and tests a specific model and its dependencies. | `dbt build --select bronze_sales` |
+| **`dbt debug`** | Checks if dbt can connect to the warehouse and verifies your configuration. | `dbt debug` |
+| **`dbt clean`** | Deletes temporary folders (`target/`, `dbt_packages/`) to reset your workspace. | `dbt clean` |
+
+---
+
+#### What is the `target/` Folder?
+
+After every dbt command (like `dbt run` or `dbt compile`), dbt generates compiled SQL code and logs inside the **`target/`** folder.
+
+This folder contains:
+- `compiled/` → the actual SQL files dbt sends to your warehouse.  
+- `run/` → results of your last run (successful and failed models).  
+- `manifest.json` → metadata about your project (used by dbt docs).  
+
+Example structure after running dbt:
+```bash
+de_project_dbt/
+├── target/
+│   ├── compiled/
+│   │   └── de_project_dbt/
+│   │       ├── bronze/
+│   │       └── silver/
+│   ├── run/
+│   └── manifest.json
+```
+
+#### What is `dbt clean`?
+`dbt clean` is used to remove temporary build files and ensure a clean environment.
+
+When you run:
+
+```bash
+    dbt clean
+```
+dbt deletes folders defined under clean-targets in your dbt_project.yml, such as:
+```yml
+    clean-targets:
+        - "target"
+        - "dbt_packages"
+```
+This helps when:
+
+-   You switch between environments or branches.
+
+-   You need to reset compiled code and logs.
+
+-   You want to avoid old manifest conflicts or cache issues.
+
+#### Typical Workflow
+```bash
+    # Step 1 — Run only Bronze models
+    dbt run --select models/bronze
+
+    # Step 2 — Once verified, run Silver layer
+    dbt run --select models/silver
+
+    # Step 3 — Build entire project
+    dbt run
+
+    # Step 4 — Test data quality
+    dbt test
+
+    # Step 5 — Clean and rebuild if needed
+    dbt clean
+    dbt run
+```
+**Reference:**
+-   [DBT Command Reference](https://docs.getdbt.com/docs/build/sources)
+-   [DBT Clean Command](https://docs.getdbt.com/reference/commands/clean)
+
+
 
 ---
 
