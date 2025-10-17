@@ -944,7 +944,7 @@ This makes it easy to join lookup data with our models:
 
 ู**Advanced Case — Custom Configuration**
 We can customize how dbt loads seeds in our `dbt_project.yml`.
-For example:
+
 ```yml
     seeds:
     de_project_dbt:
