@@ -721,25 +721,181 @@ This helps when:
 -   [DBT Command Reference](https://docs.getdbt.com/docs/build/sources)
 -   [DBT Clean Command](https://docs.getdbt.com/reference/commands/clean)
 
-
-
-
-
-
-
-
 ---
 
 ### 6️⃣ DBT Test
-_Apply data quality rules to validate model outputs._
-- Define tests in `properties.yml` files.  
-- Use built-in tests like `unique`, `not_null`, and `accepted_values`.  
-- Add custom tests (e.g., `generic_non_negative`).  
-- Execute tests using `dbt test` and review results in the terminal or UI.  
-- Track warnings or errors based on test severity levels.
+_Ensure data quality and reliability across all Medallion layers._
+
+dbt allows you to define **data tests** that validate the integrity of your datasets.  
+These tests can be:
+- **Generic tests** — predefined checks like `unique`, `not_null`, `accepted_values`.  
+- **Custom tests** — user-defined SQL or macros for specific validation logic.
 
 ---
 
-*(More steps such as DBT Documentation, DBT Run & Deploy, and CI/CD integration can be added later.)*
+1.  What is `properties.yml` Used For?
+
+    The `properties.yml` file defines **model-level and column-level tests**.
+
+    Example (`models/bronze/properties.yml`):
+
+    ```yaml
+    version: 2
+
+    models:
+      - name: bronze_dim_date
+        config:
+            materialized: view
+            schema: bronze
+
+      - name: bronze_dim_product
+        config:
+        materialized: view
+        schema: bronze
+
+      
+      - name: bronze_sales
+        columns:
+          - name: sales_id
+            tests:
+              - unique
+              - not_null
+
+          - name: gross_amount
+            tests:
+              - generic_non_negative
+
+      
+      - name: bronze_dim_store
+        columns:
+           - name: store_sk
+             tests:
+               - unique
+               - not_null
+
+           - name: store_name
+             tests:
+               - accepted_values:
+                   values: ['MegaMart Manhattan', 'MegaMart Brooklyn', 'MegaMart Austin', 'MegaMart San Jose', 'MegaMart Toronto']
+                   config:
+                     everity: warn
+
+           - name: country
+             tests:
+               - accepted_values:
+                   values: ['USA', 'Canada', 'Mexico']
+                   config:
+                     severity: warn
+    ```
+    **Explanation:**
+
+    -   dbt automatically runs these validations when you execute `dbt test`.
+    -   Each test returns PASS / FAIL status.
+
+    **Reference:** [DBT Tests Documentation](https://docs.getdbt.com/docs/build/data-tests)
+
+    ### Model: `bronze_sales`
+
+    | Column | Test | Description | Purpose |
+    |--------|------|--------------|----------|
+    | `store_sk` | `unique` | Ensures that each store has a distinct surrogate key (`store_sk`). | Prevents duplicate store IDs, maintaining one record per store. |
+    | `store_sk` | `not_null` | Checks that every store record has a valid `store_sk` value. | Guarantees store identifiers are always populated for joins and lookups. |
+    | `store_name` | `accepted_values` | Validates that store names are restricted to the allowed list: `'MegaMart Manhattan'`, `'MegaMart Brooklyn'`, `'MegaMart Austin'`, `'MegaMart San Jose'`, `'MegaMart Toronto'`. | Enforces store naming consistency and detects unexpected entries or typos. |
+    | `country` | `accepted_values` | Ensures that the store’s country value is only `'USA'`, `'Canada'`, or `'Mexico'`. | Maintains data validity for regional reporting and filtering. |
+
+    #### Custom Generic Test - `generic_non_negative.sql`
+    Location: `tests/generic/generic_non_negative.sql`
+
+    ```sql
+        {% test generic_non_negative(model, column_name) %}
+
+        SELECT
+            *
+        FROM
+            {{ model }}
+        WHERE
+                1=1
+            AND {{ column_name }} < 0
+
+        {% endtest %}
+    ```
+
+    **Explanation:**
+
+    -   This test ensures that numeric fields (e.g. `gross_amount`) are never negative.
+    -   dbt automatically passes the `model name` and `column name` to this macro when running tests defined in `properties.yml`.
+
+    If any row violates the condition (`< 0`), the test fails and dbt reports the failing records.
+
+    **Example Result:**
+
+    ```makefile
+        03:04:05  5 of 5 FAIL  generic_non_negative_bronze_sales_gross_amount  [FAIL 3 in 2.35s]
+    ```
+
+    ✅ If no negative values exist, dbt will report:
+
+    ```nginx
+        PASS  generic_non_negative_bronze_sales_gross_amount
+    ```
+
+
+    #### Custom SQL Test - `non_negative_test.sql`
+    Location: `tests/non_negative_test.sql`
+
+    ```sql
+        SELECT
+            *
+        FROM
+            {{ ref('bronze_sales') }}
+        WHERE
+            1=1
+            AND gross_amount < 0
+            AND net_amount < 0
+    ```
+    Explanation:
+
+    -   Unlike the macro test above, this is a standalone SQL test file.
+    -   It checks both gross_amount and net_amount columns at once.
+    -   If any record matches the condition, the test fails.
+
+    **Reference:** [Custom SQL Tests in dbt](https://docs.getdbt.com/docs/build/data-tests#write-a-custom-sql-test)
+
 
 ---
+2. **Example Project Structure**
+    ```pgsql
+        models/
+        │
+        ├── bronze/
+        │   ├── bronze_sales.sql
+        │   ├── bronze_dim_store.sql
+        │   └── properties.yml   ← applies to models in this folder only
+        │
+        ├── silver/
+        │   ├── silver_sales.sql
+        │   └── properties.yml   ← applies to models in silver folder
+        │
+        └── gold/
+            ├── gold_aggregates.sql
+            └── properties.yml   ← applies to models in gold folder
+    ```
+
+    #### How dbt Resolves It
+    -   dbt scans all .yml files under our models/ directory.
+    -   Each .yml must match the model names found in the same or child directory.
+    -   So our models/bronze/properties.yml:
+        -   applies to bronze_sales.sql, bronze_dim_store.sql, etc.
+        -   does not affect silver or gold models.
+
+    If we want to define tests for Silver or Gold, we should create separate properties.yml files in those folders:
+
+    ```bash
+        models/silver/properties.yml
+        models/gold/properties.yml
+    ```
+    **Reference:** [DBT Documentation — Organizing .yml Files](https://docs.getdbt.com/docs/build/sources#organizing-sources-and-tests)
+
+---
+
+
