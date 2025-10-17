@@ -726,7 +726,7 @@ This helps when:
 ### 6️⃣ DBT Test
 _Ensure data quality and reliability across all Medallion layers._
 
-dbt allows you to define **data tests** that validate the integrity of your datasets.  
+dbt allows us to define **data tests** that validate the integrity of our datasets.  
 These tests can be:
 - **Generic tests** — predefined checks like `unique`, `not_null`, `accepted_values`.  
 - **Custom tests** — user-defined SQL or macros for specific validation logic.
@@ -789,7 +789,7 @@ These tests can be:
     ```
     **Explanation:**
 
-    -   dbt automatically runs these validations when you execute `dbt test`.
+    -   dbt automatically runs these validations when we execute `dbt test`.
     -   Each test returns PASS / FAIL status.
 
     **Reference:** [DBT Tests Documentation](https://docs.getdbt.com/docs/build/data-tests)
