@@ -898,4 +898,80 @@ These tests can be:
 
 ---
 
+### 7️⃣ DBT Seed
+
+#### What Are Seeds?
+
+**Seeds** are **CSV files** that dbt can load directly into our data warehouse (in this project — Databricks).  
+They are typically used for **static reference data** such as lookup tables, mapping tables, or default configuration values.
+
+Think of them as small, version-controlled datasets that live inside our dbt project, usually in the `/seeds/` folder.
+
+---
+
+#### 📁 Example: Basic Case
+
+Suppose we have a seed file:  
+`/seeds/country_lookup.csv`
+
+```csv
+country_code,country_name,region
+US,United States,North America
+CA,Canada,North America
+MX,Mexico,North America
+```
+We can load it into our warehouse by running:
+
+```bash
+    dbt seed
+```
+
+✅ dbt will:
+-   Read country_lookup.csv
+-   Create a table (or replace it) in our target schema
+-   Use the same name as the file (country_lookup)
+
+This makes it easy to join lookup data with our models:
+
+```sql
+    SELECT 
+        s.store_name,
+        c.region
+    FROM {{ ref('bronze_dim_store') }}    AS s
+    LEFT JOIN {{ ref('country_lookup') }} AS c
+        ON s.country = c.country_name
+```
+
+ู**Advanced Case — Custom Configuration**
+We can customize how dbt loads seeds in our `dbt_project.yml`.
+For example:
+```yml
+    seeds:
+    de_project_dbt:
+        +schema: bronze
+        +column_types:
+        country_code: string
+        country_name: string
+        region: string
+        +quote_columns: false
+```
+This configuration means:
+-   All seed data will be loaded into the bronze schema.
+-   dbt will assign explicit column types (useful for Databricks).
+-   Column names won’t be quoted (for compatibility with some SQL dialects).
+
+**Reference:** [DBT Docs — Seeding Data](https://docs.getdbt.com/docs/build/seeds)
+
+---
+
+**Commands Reference**
+| Command | Description |
+|----------|--------------|
+| `dbt seed` | Loads all seed CSV files into your data warehouse. |
+| `dbt seed --select country_lookup` | Loads only the specified seed file (e.g., `country_lookup.csv`). |
+| `dbt seed --full-refresh` | Reloads all seeds from scratch — drops and recreates the tables. |
+| `dbt seed --show` | Displays the compiled SQL that dbt will execute for seeding. |
+
+---
+
 
