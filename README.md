@@ -683,13 +683,13 @@ de_project_dbt/
 When we run:
 
 ```bash
-    dbt clean
+dbt clean
 ```
 dbt deletes folders defined under clean-targets in our dbt_project.yml, such as:
 ```yml
-    clean-targets:
-        - "target"
-        - "dbt_packages"
+clean-targets:
+    - "target"
+    - "dbt_packages"
 ```
 This helps when:
 
@@ -807,17 +807,17 @@ These tests can be:
     Location: `tests/generic/generic_non_negative.sql`
 
     ```sql
-        {% test generic_non_negative(model, column_name) %}
+    {% test generic_non_negative(model, column_name) %}
 
-        SELECT
-            *
-        FROM
-            {{ model }}
-        WHERE
-                1=1
-            AND {{ column_name }} < 0
+    SELECT
+        *
+    FROM
+        {{ model }}
+    WHERE
+            1=1
+        AND {{ column_name }} < 0
 
-        {% endtest %}
+    {% endtest %}
     ```
 
     **Explanation:**
@@ -830,13 +830,13 @@ These tests can be:
     **Example Result:**
 
     ```makefile
-        03:04:05  5 of 5 FAIL  generic_non_negative_bronze_sales_gross_amount  [FAIL 3 in 2.35s]
+    03:04:05  5 of 5 FAIL  generic_non_negative_bronze_sales_gross_amount  [FAIL 3 in 2.35s]
     ```
 
     ✅ If no negative values exist, dbt will report:
 
     ```nginx
-        PASS  generic_non_negative_bronze_sales_gross_amount
+    PASS  generic_non_negative_bronze_sales_gross_amount
     ```
 
 
@@ -891,8 +891,8 @@ These tests can be:
     If we want to define tests for Silver or Gold, we should create separate properties.yml files in those folders:
 
     ```bash
-        models/silver/properties.yml
-        models/gold/properties.yml
+    models/silver/properties.yml
+    models/gold/properties.yml
     ```
     **Reference:** [DBT Documentation — Organizing .yml Files](https://docs.getdbt.com/docs/build/sources#organizing-sources-and-tests)
 
@@ -923,7 +923,7 @@ MX,Mexico,North America
 We can load it into our warehouse by running:
 
 ```bash
-    dbt seed
+dbt seed
 ```
 
 ✅ dbt will:
@@ -934,26 +934,26 @@ We can load it into our warehouse by running:
 This makes it easy to join lookup data with our models:
 
 ```sql
-    SELECT 
-        s.store_name,
-        c.region
-    FROM {{ ref('bronze_dim_store') }}    AS s
-    LEFT JOIN {{ ref('country_lookup') }} AS c
-        ON s.country = c.country_name
+SELECT 
+    s.store_name,
+    c.region
+FROM {{ ref('bronze_dim_store') }}    AS s
+LEFT JOIN {{ ref('country_lookup') }} AS c
+    ON s.country = c.country_name
 ```
 
 ู**Advanced Case — Custom Configuration**
 We can customize how dbt loads seeds in our `dbt_project.yml`.
 
 ```yml
-    seeds:
-    de_project_dbt:
-        +schema: bronze
-        +column_types:
-        country_code: string
-        country_name: string
-        region: string
-        +quote_columns: false
+seeds:
+de_project_dbt:
+    +schema: bronze
+    +column_types:
+    country_code: string
+    country_name: string
+    region: string
+    +quote_columns: false
 ```
 This configuration means:
 -   All seed data will be loaded into the bronze schema.
