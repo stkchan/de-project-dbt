@@ -142,8 +142,8 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
 
     **Usage in a model:**
     ```sql
-        SELECT *
-        FROM {{ source('source', 'fact_sales') }}
+    SELECT *
+    FROM {{ source('source', 'fact_sales') }}
     ```
     
     **Explanation:**
@@ -844,14 +844,14 @@ These tests can be:
     Location: `tests/non_negative_test.sql`
 
     ```sql
-        SELECT
-            *
-        FROM
-            {{ ref('bronze_sales') }}
-        WHERE
-            1=1
-            AND gross_amount < 0
-            AND net_amount < 0
+    SELECT
+        *
+    FROM
+        {{ ref('bronze_sales') }}
+    WHERE
+        1=1
+        AND gross_amount < 0
+        AND net_amount < 0
     ```
     Explanation:
 
@@ -967,10 +967,192 @@ This configuration means:
 **Commands Reference**
 | Command | Description |
 |----------|--------------|
-| `dbt seed` | Loads all seed CSV files into your data warehouse. |
+| `dbt seed` | Loads all seed CSV files into our data warehouse. |
 | `dbt seed --select country_lookup` | Loads only the specified seed file (e.g., `country_lookup.csv`). |
 | `dbt seed --full-refresh` | Reloads all seeds from scratch — drops and recreates the tables. |
 | `dbt seed --show` | Displays the compiled SQL that dbt will execute for seeding. |
+
+---
+
+### 8️⃣ DBT Jinja & Macros
+
+**dbt Jinja** allows you to add dynamic logic, loops, variables, and macros inside SQL models.  
+It uses the [Jinja2 templating language](https://jinja.palletsprojects.com/en/3.1.x/templates/) — the same engine used by Python frameworks like Flask.  
+With Jinja, your SQL models become **parametric**, **reusable**, and **context-aware** (e.g., automatically adapting by schema, date, or flags).
+
+---
+
+#### General Concepts
+
+| Syntax | Purpose | Example |
+|--------|----------|---------|
+| `{% ... %}` | Control statements like loops and conditionals | `{% for item in list %}` |
+| `{{ ... }}` | Output variables or expressions | `{{ ref('bronze_sales') }}` |
+| `{# ... #}` | Comment (ignored during compilation) | `{# this is ignored #}` |
+
+dbt runs Jinja **before** executing SQL — meaning our logic is rendered into plain SQL first, then executed on Databricks.
+
+---
+
+#### General Example
+
+```jinja
+{% set columns = ["sales_id", "date_sk", "gross_amount"] %}
+
+SELECT
+    {{ columns | join(', ') }}
+FROM
+    {{ ref('bronze_sales') }}
+```
+
+**Rendered SQL Output:**
+```sql
+SELECT
+    sales_id, 
+    date_sk, 
+    gross_amount
+FROM
+    `dbt_dev.bronze.bronze_sales`
+```
+
+---
+
+#### For loop example in Jinja
+
+```jinja
+{% set countries = ["Japan", "USA", "China", "France", "Spain", "Thailand", "Cambodia"] %}
+
+{% for i in countries %}
+    {% if i != "Cambodia" %}
+        {{ i }} is allowed
+    {% else %}
+        {{ i }} is restricted
+    {% endif %}
+{% endfor %}
+```
+**What Happens**
+-   `set countries` - defines Python list (array) of country names. 
+    ["Japan", "USA", "China", "France", "Spain", "Thailand", "Cambodia"]
+-   `for i in countries` - loops through each element of the list, one by one.
+-   `if i != "Cambodia"` - checks if the current item `(i)` is not equal to `"Cambodia"`.
+
+**Rendered Output**
+```csharp
+Japan is allowed
+USA is allowed
+China is allowed
+France is allowed
+Spain is allowed
+Thailand is allowed
+Cambodia is restricted
+```
+
+---
+
+#### Incremental example in Jinja
+
+```jinja
+{% set inc_flag  = 1 %}
+{% set last_load = 3 %}
+{% set cols_list = ["sales_id", "date_sk", "gross_amount"] %}
+
+
+SELECT
+    {% for i in cols_list %}
+        {{ i }}
+        {% if not loop.last %}, {% endif%}
+
+    {% endfor%}
+
+FROM
+    {{ ref('bronze_sales') }}
+
+{% if inc_flag == 1 %}
+    WHERE date_sk > {{ last_load }}
+{% endif %}
+```
+
+##### Step-by-Step Breakdown
+1.  Variables
+    -   `inc_flag`  = 1 - acts like a control flag (1 = incremental load, 0 = full load).
+    -   `last_load` = 3 - defines the cutoff value for incremental loading (e.g., latest `date_sk`).
+    -   `cols_list` - defines a list of columns you want to select dynamically.
+
+2.  Jinja Loop — Dynamic Column Generation
+    ```jinja
+    {% for i in cols_list %}
+        {{ i }}
+        {% if not loop.last %}, {% endif %}
+    {% endfor %}
+    ```
+    This loop iterates over the list and prints each column, separated by commas.
+    -   The inner condition `{% if not loop.last %}` ensures that no trailing comma appears after the last column.
+
+    **Resulting SQL fragment:**
+    ```sql
+    sales_id, date_sk, gross_amount
+    ```
+3. The `if` condition — Dynamic WHERE Clause
+    ```jinja
+    {% if inc_flag == 1 %}
+        WHERE date_sk > {{ last_load }}
+    {% endif %}
+    ```
+    Since `inc_flag = 1`, this condition is true, so the `WHERE` clause will be included.
+    If `inc_flag` were 0, this entire block would be skipped. 
+
+
+    **inal Rendered SQL Output:**
+
+    ```sql
+    SELECT
+        sales_id,
+        date_sk, 
+        gross_amount
+
+    FROM
+        dbt_dev.bronze.bronze_sales
+
+    WHERE 
+        date_sk > 3
+    ```
+
+
+
+---
+
+#### Example with Custom Macro
+We can define reusable logic in the macros/ folder.
+
+File: `macros/multiply.sql`
+```jinja
+{% macro multiply(a, b) %}
+    ROUND({{ a }} * {{ b }}, 2)
+{% endmacro %}
+```
+
+**Usage inside a model:**
+```sql
+SELECT
+    sales_id,
+    {{ multiply('unit_price', 'quantity') }} AS total_revenue
+FROM
+    {{ ref('bronze_sales') }}
+```
+
+**Rendered SQL:**
+```sql
+SELECT
+    sales_id,
+    ROUND(unit_price * quantity, 2) AS total_revenue
+FROM
+    dbt_dev.bronze.bronze_sales
+```
+
+**Reference:**
+-   [DBT Jinja](https://docs.getdbt.com/docs/build/jinja-macros#jinja)
+-   [DBT Macros](https://docs.getdbt.com/docs/build/jinja-macros#macros)
+
 
 ---
 
