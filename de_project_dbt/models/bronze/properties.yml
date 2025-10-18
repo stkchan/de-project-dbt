@@ -8,7 +8,7 @@ models:
 
   - name: bronze_dim_product
     config:
-      materialized: view
+      materialized: table
       schema: bronze
 
   - name: bronze_sales
