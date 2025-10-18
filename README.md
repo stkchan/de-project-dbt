@@ -38,16 +38,16 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
     `macros/generate_schema_name.sql`
 
     ```sql
-        {% macro generate_schema_name(custom_schema_name, node) -%}
+    {% macro generate_schema_name(custom_schema_name, node) -%}
 
-            {%- set default_schema = target.schema -%}
-            {%- if custom_schema_name is none -%}
-                {{ default_schema }}
-            {%- else -%}
-                {{ custom_schema_name | trim }}
-            {%- endif -%}
+        {%- set default_schema = target.schema -%}
+        {%- if custom_schema_name is none -%}
+            {{ default_schema }}
+        {%- else -%}
+            {{ custom_schema_name | trim }}
+        {%- endif -%}
 
-        {%- endmacro %}
+    {%- endmacro %}
     ```
 
     **Explanation:** 
@@ -72,32 +72,32 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
     **Example:**
 
     ```ymal
-        version: 2
+    version: 2
 
-        models:
-        - name: bronze_sales
-            columns:
-            - name: sales_id
-                tests:
-                - unique
-                - not_null
+    models:
+    - name: bronze_sales
+        columns:
+        - name: sales_id
+            tests:
+            - unique
+            - not_null
 
-            - name: gross_amount
-                tests:
-                - generic_non_negative
+        - name: gross_amount
+            tests:
+            - generic_non_negative
 
-        - name: bronze_dim_store
-            columns:
-            - name: store_sk
-                tests:
-                - unique
-                - not_null
-            - name: store_name
-                tests:
-                - accepted_values:
-                    values: ['MegaMart Manhattan', 'MegaMart Brooklyn', 'MegaMart Austin', 'MegaMart San Jose', 'MegaMart Toronto']
-                    config:
-                        severity: warn
+    - name: bronze_dim_store
+        columns:
+        - name: store_sk
+            tests:
+            - unique
+            - not_null
+        - name: store_name
+            tests:
+            - accepted_values:
+                values: ['MegaMart Manhattan', 'MegaMart Brooklyn', 'MegaMart Austin', 'MegaMart San Jose', 'MegaMart Toronto']
+                config:
+                    severity: warn
     ```
     **Explanation:**
 
@@ -126,18 +126,18 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
 
     ```ymal
 
-        version: 2
+    version: 2
 
-        sources:
-        - name: source
-            description: "Raw data tables loaded from CSV files into Databricks"
-            database: dbt_dev 
-            schema: source
-            tables:
-            - name: fact_sales
-                description: "Fact Table: Sales"
-            - name: dim_store
-                description: "Dimension Table: Store"
+    sources:
+    - name: source
+        description: "Raw data tables loaded from CSV files into Databricks"
+        database: dbt_dev 
+        schema: source
+        tables:
+        - name: fact_sales
+            description: "Fact Table: Sales"
+        - name: dim_store
+            description: "Dimension Table: Store"
     ```
 
     **Usage in a model:**
@@ -166,29 +166,29 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
     **Example:**
 
     ```ymal
-        name: 'de_project_dbt'
-        version: '1.0.0'
-        profile: 'de_project_dbt'
+    name: 'de_project_dbt'
+    version: '1.0.0'
+    profile: 'de_project_dbt'
 
-        model-paths: ["models"]
-        macro-paths: ["macros"]
-        seed-paths: ["seeds"]
+    model-paths: ["models"]
+    macro-paths: ["macros"]
+    seed-paths: ["seeds"]
 
-        clean-targets:
-        - "target"
-        - "dbt_packages"
+    clean-targets:
+    - "target"
+    - "dbt_packages"
 
-        models:
-        de_project_dbt:
-            bronze:
-            +materialized: table
-            schema: bronze
-            silver:
-            +materialized: table
-            schema: silver
-            gold:
-            +materialized: table
-            schema: gold
+    models:
+    de_project_dbt:
+        bronze:
+        +materialized: table
+        schema: bronze
+        silver:
+        +materialized: table
+        schema: silver
+        gold:
+        +materialized: table
+        schema: gold
     ```
     **Explanation:**
 
@@ -205,16 +205,16 @@ It follows a **Medallion Architecture** approach — organizing data into **Bron
     -   Our profiles.yml (created automatically after dbt init) includes:
 
     ```ymal
-        de_project_dbt:
-            outputs:
-                dev:
-                type: databricks
-                catalog: dbt_dev
-                schema: bronze
-                host: https://<your-workspace>.cloud.databricks.com
-                http_path: /sql/1.0/warehouses/<warehouse-id>
-                token: <your-personal-access-token>
-            target: dev
+    de_project_dbt:
+        outputs:
+            dev:
+            type: databricks
+            catalog: dbt_dev
+            schema: bronze
+            host: https://<your-workspace>.cloud.databricks.com
+            http_path: /sql/1.0/warehouses/<warehouse-id>
+            token: <your-personal-access-token>
+        target: dev
     ```
     **Reference:** [`DBT Project Configuration`](https://docs.getdbt.com/reference/dbt_project.yml)
 
@@ -228,7 +228,7 @@ _Set up local environment to run dbt with the Databricks Free Community Edition.
 #### Step 1. Install Python and `uv`
 1. Install [`uv`](https://github.com/astral-sh/uv) — a **fast Python package and virtual environment manager** (an alternative to `pip` and `venv`).
     ```bash
-        pip install uv
+    pip install uv
     ```
     - `uv` is used in this project because:
         -   It creates and manages Python environments extremely fast (uv venv .venv).
@@ -243,12 +243,12 @@ _Set up local environment to run dbt with the Databricks Free Community Edition.
 
 3. Activate `Virtual Environment` using `Git Bash`
     ```bash
-        source .venv/Scripts/activate
+    source .venv/Scripts/activate
     ```
 
 4. Add dbt Packages with uv - This command both installs the packages and automatically records them in `pyproject.toml` - so no longer need a manual `requirements.txt` file.
     ```bash
-        uv add dbt-core dbt-databricks
+    uv add dbt-core dbt-databricks
     ```
     This will:
     -   Install `dbt-core` - the command-line tool used for data transformation, testing, and documentation.
@@ -477,12 +477,12 @@ _Define project configuration, structure, and basic workflows._
 
     **The most important match is:**
     ```bash
-        profile: 'de_project_dbt'
+    profile: 'de_project_dbt'
     ```
     in `dbt_project.yml`
     must match the top-level key in `profiles.yml`: 
     ```bash
-        de_project_dbt:
+    de_project_dbt:
     ```
     Otherwise, dbt will say:
     `Could not find profile named 'de_project_dbt'`
@@ -507,11 +507,11 @@ _Define project configuration, structure, and basic workflows._
 #### Delete "models/example" folder and Create "bronze", "silver", "gold" folders in models folder
 1. Delete the default example folder
     ```bash
-        rm -r models/example
+    rm -r models/example
     ```
 2. Create 3 new folders in `models/`
     ```bash
-        mkdir models/bronze models/silver models/gold
+    mkdir models/bronze models/silver models/gold
     ```
     Folder structure:
 
@@ -701,21 +701,21 @@ This helps when:
 
 #### Typical Workflow
 ```bash
-    # Step 1 — Run only Bronze models
-    dbt run --select models/bronze
+# Step 1 — Run only Bronze models
+dbt run --select models/bronze
 
-    # Step 2 — Once verified, run Silver layer
-    dbt run --select models/silver
+# Step 2 — Once verified, run Silver layer
+dbt run --select models/silver
 
-    # Step 3 — Build entire project
-    dbt run
+# Step 3 — Build entire project
+dbt run
 
-    # Step 4 — Test data quality
-    dbt test
+# Step 4 — Test data quality
+dbt test
 
-    # Step 5 — Clean and rebuild if needed
-    dbt clean
-    dbt run
+# Step 5 — Clean and rebuild if needed
+dbt clean
+dbt run
 ```
 **Reference:**
 -   [DBT Command Reference](https://docs.getdbt.com/docs/build/sources)
