@@ -1339,14 +1339,17 @@ SELECT
   dbt_valid_from,
   dbt_valid_to
   
+
 FROM
-  dbt_production.scd.bronze_dim_customer_snapshot_scd_type_2
+  dbt_dev.scd.bronze_dim_customer_snapshot_scd_type_2
 
 WHERE
-  customer_sk IN (5, 10, 25)
+      1=1
+  AND customer_sk IN (5, 10, 25)
 
 ORDER BY
-  customer_sk
+  customer_sk,
+  dbt_valid_to ASC
 ```
 **Query Result**
 
