@@ -1325,11 +1325,28 @@ You can easily check current vs historical records:
 SELECT *
 FROM dbt_dev.scd.bronze_dim_customer_snapshot_scd_type_2
 WHERE dbt_valid_to IS NULL;
+```
 
+```sql
 -- Full historical view (all versions)
-SELECT *
-FROM dbt_dev.scd.bronze_dim_customer_snapshot_scd_type_2
-ORDER BY customer_sk, dbt_valid_from;
+SELECT
+  customer_sk,
+  first_name,
+  last_name,
+  loyalty_tier,
+  updated_at,
+  dbt_updated_at,
+  dbt_valid_from,
+  dbt_valid_to
+  
+FROM
+  dbt_production.scd.bronze_dim_customer_snapshot_scd_type_2
+
+WHERE
+  customer_sk IN (5, 10, 25)
+
+ORDER BY
+  customer_sk
 ```
 
 
