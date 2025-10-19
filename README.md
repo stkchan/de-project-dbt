@@ -18,12 +18,12 @@
 
 ## Project Overview
 This project demonstrates an end-to-end data transformation pipeline using **dbt Core** with **Databricks** as the compute engine.  
-It follows a **Medallion Architecture** approach — organizing data into **Bronze**, **Silver**, and **Gold** layers for better data quality, lineage, and reusability.
+It follows a **Medallion Architecture** approach — organizing data into **Bronze**, **Silver**, and **Gold** layers
 
 ---
 
 ## Project Objectives
-- Just want try
+- Nothing. Just want to learn more about DBT.
 
 ---
 
@@ -1689,7 +1689,7 @@ The Gold layer delivers business-ready analytical summaries and KPIs for dashboa
 ---
 
 
-5. Data Flow Summary
+### 5. Data Flow Summary
 
  **Layer** | **Input Source** | **Output** | **Purpose** |
 |------------|------------|-----------------|-----------------|
