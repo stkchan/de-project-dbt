@@ -3,7 +3,8 @@ version: 2
 sources:
   - name: source
     description: "Raw data tables loaded from CSV files into Databricks"
-    database: dbt_dev 
+    # database: dbt_dev 
+    database: '{{ target.catalog }}'
     schema: source
     tables:
       - name: fact_sales

@@ -3,7 +3,7 @@ snapshots:
     description: "SCD Type 2 snapshot tracking changes in bronze schema"
     relation: ref('bronze_dim_customer')
     config:
-      database: dbt_dev
+      database: '{{ target.catalog }}'
       schema: scd
       unique_key: customer_sk
       strategy: timestamp
@@ -14,7 +14,7 @@ snapshots:
     description: "SCD-Type-2 snapshot tracking changes in bronze_dim_product"
     relation: ref('bronze_dim_product')
     config:
-      database: dbt_dev
+      database: '{{ target.catalog }}'
       schema: scd
       unique_key: product_sk
       strategy: timestamp

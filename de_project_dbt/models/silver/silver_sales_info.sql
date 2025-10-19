@@ -45,7 +45,7 @@ SELECT
 FROM
     bronze_sales        AS bz
 INNER JOIN
-    bronze_dim_product  AS bp 
+    bronze_products     AS bp 
 ON  bz.product_sk = bp.product_sk
 INNER JOIN
     bronze_customer     AS bc
