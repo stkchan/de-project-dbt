@@ -1624,24 +1624,78 @@ This section describes the **end-to-end lineage flow** of the DBT project — fr
   ![Overall Data Flow](https://github.com/stkchan/de-project-dbt/blob/89dd6ce5c07d36ce153eec000c1277d9fbaf067c/images/Screenshot%202025-10-19%20132812.png)
 
 
-### 🔹 1. Source Layer (`source` schema)
+### 1. Source Layer (`source` schema)
 Raw data is first loaded from CSV files into the Databricks catalog under the `source` schema.
 
-        | **Table** | **Description** |
-        |------------|----------------|
-        | `dim_customer` | Raw customer information (names, gender, contact). |
-        | `dim_product` | Product details including category and price. |
-        | `fact_sales` | Transaction-level sales data. |
-        | `fact_returns` | Return transaction data. |
-        | `dim_store` | Store metadata including location and country. |
-        | `dim_date` | Calendar dimension used for time-based analysis. |
+| **Table** | **Description** |
+|------------|----------------|
+| `dim_customer` | Raw customer information (names, gender, contact). |
+| `dim_product` | Product details including category and price. |
+| `fact_sales` | Transaction-level sales data. |
+| `fact_returns` | Return transaction data. |
+| `dim_store` | Store metadata including location and country. |
+| `dim_date` | Calendar dimension used for time-based analysis. |
 
-        These are defined in **`models/source/sources.yml`**, using:
-        ```yaml
-        database: '{{ target.catalog }}'
-        schema: source
-        ```
+These are defined in **`models/source/sources.yml`**, using:
+```yaml
+database: '{{ target.catalog }}'
+schema: source
+```
+---
+
+### 2. Bronze Layer (`bronze` schema)
+The Bronze layer performs **basic cleaning and structuring** of the source data — creating dimension and fact tables that align with analytical models.
+
+| **Model** | **Transformation Goal** |
+|------------|----------------|
+| `bronze_dim_customer` | Standardizes customer data, adds `updated_at` for SCD tracking. |
+| `dbronze_dim_product` | Cleans and prepares product attributes. |
+| `bronze_sales` | Consolidates sales fact data, adds derived metrics like `total_sales`. |
+| `bronze_returns` | Structures return facts for consistency. |
+
+Snapshots (SCD Type 2) are defined for customer and product to track historical changes:
+-   `bronze_dim_customer_snapshot_scd_type_2`
+-   `bronze_dim_product_snapshot_scd_type_2`
+
+---
+
+### 3. Silver Layer (`silver` schema)
+The Silver layer integrates data across multiple bronze models, enriching it with contextual attributes for analytical use.
+
+| **Model** | **Purpose** | **Source Dependencies** |
+|------------|----------------|----------------------|
+| `silver_sales_info` | Combines sales with customer and product info to create a analytical table. | `bronze_dim_customer`, `bronze_dim_product`,`bronze_sales`
+
+This layer creates a single view of sales performance with attributes such as:
+
+-   `total_sales`
+-   `gross_amount`
+-   `discount_amount`
+-   `payment_method`
+-   `gender`
+-   `loyalty_tier`
+
+---
+
+### 4. Gold Layer (`gold schema`)
+The Gold layer delivers business-ready analytical summaries and KPIs for dashboards or BI consumption. It aggregates `silver_sales_info` into various business dimensions.
+
+ **Model** | **Purpose** | **Key Metrics** |
+|------------|------------|-------------|
+| `gold_payment_method_total_spent_transactions` | Summarizes spending and transaction counts by payment method. | `total_spent`, `purchase_count`
+| `gold_gender_performance_each_product`    |   Compares total sales and discounts by gender for each product.  | `total_spent`, `total_discount`
+| `gold_loyaltier_performance_each_product` | Evaluates performance by loyalty tier across products. | `total_spent`, `avg_transaction_value`, `purchase_count`
 
 ---
 
 
+5. Data Flow Summary
+
+ **Layer** | **Input Source** | **Output** | **Purpose** |
+|------------|------------|-----------------|-----------------|
+| Source | CSV → Databricks `source` schema | `dim_customer`, `fact_sales` | Raw ingestion
+| Bronze | `source` tables | `bronze_dim_customer`, `bronze_sales` | Cleaned & standardized
+| Silver | Bronze dimension + facts | `silver_sales_info` | Unified analytical dataset
+| Gold | Silver model | `gold_*` tables | Aggregated business KPIs
+
+---
