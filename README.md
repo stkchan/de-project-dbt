@@ -1155,5 +1155,184 @@ FROM
 
 
 ---
+### 9️⃣ DBT Snapshot (SCD Type 2)
+
+#### Concept Overview
+**DBT Snapshots** are used to capture **historical changes** in dimension tables over time — this is known as **Slowly Changing Dimension Type 2 (SCD Type 2)**.
+
+Normally, when data in a source or bronze layer changes (e.g., a customer’s loyalty tier or a product’s category), the old record is overwritten.  
+With a **snapshot**, DBT automatically preserves both the **old** and **new** versions, enabling time-based analysis such as “what was true at a given point in time.”
+
+---
+
+#### Snapshot Configuration (YAML)
+
+In this project, two SCD-Type-2 snapshots are defined in  
+`snapshots/bronze_dim_customer.yml`:
+
+```yaml
+snapshots:
+  - name: bronze_dim_customer_snapshot_scd_type_2
+    description: "SCD Type 2 snapshot tracking changes in bronze schema"
+    relation: ref('bronze_dim_customer')
+    config:
+      database: '{{ target.catalog }}'
+      schema: scd
+      unique_key: customer_sk
+      strategy: timestamp
+      updated_at: updated_at
+      dbt_valid_to_current: NULL  # Specifies that current records should have `dbt_valid_to` set to `'9999-12-31'` instead of `NULL`
+
+  - name: bronze_dim_product_snapshot_scd_type_2
+    description: "SCD-Type-2 snapshot tracking changes in bronze_dim_product"
+    relation: ref('bronze_dim_product')
+    config:
+      database: '{{ target.catalog }}'
+      schema: scd
+      unique_key: product_sk
+      strategy: timestamp
+      updated_at: updated_at
+      dbt_valid_to_current: NULL # Specifies that current records should have `dbt_valid_to` set to `'9999-12-31'` instead of `NULL`
+```
+---
+
+#### Key Configurations
+
+| **Configuration** | **Type / Example** | **Description** |
+|--------------------|--------------------|-----------------|
+| `name` | `bronze_dim_customer_snapshot_scd_type_2` | Defines the snapshot’s unique name. This name will also appear as the table name under the configured schema (e.g., `scd.bronze_dim_customer_snapshot_scd_type_2`). |
+| `description` | `"SCD Type 2 snapshot tracking changes in bronze schema"` | Human-readable description of what the snapshot is tracking. |
+| `relation` | `ref('bronze_dim_customer')` | Points to the model being tracked for changes. DBT uses this as the source for snapshotting. |
+| `database` | `{{ target.catalog }}` | Specifies the target database (dynamic — changes based on the active target, e.g. `dbt_dev` or `dbt_production`). |
+| `schema` | `scd` | The schema where the snapshot will be created (used to separate historical tables from other layers). |
+| `unique_key` | `customer_sk` | Primary key in the source model that uniquely identifies each record (used for comparison). |
+| `strategy` | `timestamp` | The method DBT uses to detect changes. `timestamp` is recommended because it’s efficient and resilient to schema drift. |
+| `updated_at` | `updated_at` | The column in the model that represents when a record was last updated. DBT compares this to detect new versions. |
+| `dbt_valid_to_current` | `NULL` | Controls how current records are marked. If `NULL`, active rows have `dbt_valid_to = NULL`; if a date is specified (e.g., `'9999-12-31'`), it marks the open-ended record. |
+
+**How the Timestamp Strategy Works**
+
+The `timestamp` strategy compares the current data in the source table with the previous version stored in the snapshot:
+
+1.  On the first run, DBT copies all records into the snapshot table.
+2.  On subsequent runs, DBT checks the `updated_at` column:
+    -   If `updated_at` is newer than the snapshot’s last load → DBT closes the old record (`dbt_valid_to`) and inserts a new one.
+    -   If unchanged → no new record is added.
+
+Each record in the snapshot will have the following system columns:
+-   `dbt_valid_from` → when the record became active
+-   `dbt_valid_to` → when the record was replaced (NULL = current)
+-   `dbt_scd_id` → unique hash identifier for the record state
+
+---
+
+#### Implementation Steps
+1.  Add `updated_at` column to our bronze models:
+    ```sql
+    SELECT
+        *,
+        CURRENT_TIMESTAMP() AS updated_at
+    FROM 
+        {{ source('source', 'dim_customer') }}
+    ```
+
+2.  Create snapshot YAML (as shown above).
+3.  Run our models to ensure the base tables exist:
+    ```bash
+    dbt run --select bronze_dim_customer bronze_dim_product
+    ```
+4.  Execute the snapshot:
+    ```bash
+    dbt snapshot
+    ```
+5.  Verify results in Databricks:
+    ```sql
+    SELECT * FROM dbt_dev.scd.bronze_dim_customer_snapshot_scd_type_2;
+    ```
+    We will see multiple versions of records if any `updated_at` values changed.
+
+
+#### Testing the Snapshot
+We can simulate an SCD change:
+```sql
+UPDATE dbt_dev.bronze.bronze_dim_customer
+SET 
+    loyalty_tier = CASE
+        WHEN customer_sk IN (5, 20, 24, 33, 36, 39) THEN 'Silver'
+        WHEN customer_sk IN (10, 12, 17, 19) THEN 'Gold'
+        WHEN customer_sk IN (25, 31, 37) THEN 'Platinum'
+        ELSE loyalty_tier
+    END,
+    updated_at = CURRENT_TIMESTAMP()
+
+WHERE 
+    customer_sk IN (
+    5, 10, 12, 17, 19, 20, 24, 25, 31, 33, 36, 37, 39
+);
+```
+OR
+
+```sql
+UPDATE dbt_dev.bronze.bronze_dim_product
+SET 
+    category = CASE
+        WHEN product_sk = 7 THEN 'Toys'
+        WHEN product_sk = 5 THEN 'Television'
+        ELSE category
+    END,
+    updated_at = CURRENT_TIMESTAMP()
+
+WHERE product_sk IN (5, 7);
+```
+
+Then re-run:
+```bash
+dbt snapshot
+```
+DBT will automatically insert a new version of that record in the snapshot table while keeping the previous version with `dbt_valid_to` timestamp.
+
+---
+
+#### Auto-Generated Snapshot Columns
+
+When a snapshot runs, DBT automatically adds several **system columns** to manage versioning and historical tracking.  
+These columns appear alongside your model’s original fields (as seen in Databricks).
+
+| **Column Name** | **Example Value (from your data)** | **Description / Purpose** |
+|------------------|------------------------------------|----------------------------|
+| `dbt_scd_id` | `bb91997384e22331cba12a15569eb364` | Unique hash generated by DBT for each record version. Used internally to track change history. |
+| `dbt_updated_at` | `2025-10-19T01:31:20.039+00:00` | Timestamp representing when DBT last detected this record in the source model. |
+| `dbt_valid_from` | `2025-10-19T01:31:20.039+00:00` | The time when this record version first became active. |
+| `dbt_valid_to` | `2025-10-19T01:41:56.254+00:00` *(NULL if current)* | The time when this record stopped being valid (i.e., was replaced by a newer version). If `NULL`, it’s the currently active record. |
+| `updated_at` *(from your source)* | `2025-10-19T01:31:20.039+00:00` | The business timestamp from your bronze model, used as the `timestamp` strategy comparison field. |
+
+---
+
+#### Example Interpretation
+In your snapshot table:
+
+- If `dbt_valid_to` = `NULL` → the record is **currently active**.  
+- If `dbt_valid_to` has a value → the record is **historical**, replaced by a newer version when the source data changed.  
+- Both versions remain in the snapshot, giving you **complete change history** over time.
+
+---
+
+#### Quick Query Example
+You can easily check current vs historical records:
+
+```sql
+-- Current active records only
+SELECT *
+FROM dbt_dev.scd.bronze_dim_customer_snapshot_scd_type_2
+WHERE dbt_valid_to IS NULL;
+
+-- Full historical view (all versions)
+SELECT *
+FROM dbt_dev.scd.bronze_dim_customer_snapshot_scd_type_2
+ORDER BY customer_sk, dbt_valid_from;
+```
+
+
+---
 
 
