@@ -1353,7 +1353,7 @@ ORDER BY
 ```
 **Query Result**
 
-![Result Query](https://github.com/stkchan/de-project-dbt/blob/b5c3a88804d13275a1846459180afb7a8ae3a6e5/images/Screenshot%202025-10-19%20111309.png)
+![Result Query](https://github.com/stkchan/de-project-dbt/blob/f4f46b1a438a4e2d6929c341280e634694936b2e/images/Screenshot%202025-10-19%20113850.png)
 
 
 
