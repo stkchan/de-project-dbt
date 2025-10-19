@@ -8,11 +8,18 @@
 - [Project Objectives](#-project-objectives)
 - [Steps of Each Process](#-steps-of-each-process)
   - [1️⃣ Environment Setup](#1️⃣-environment-setup)
-  - [2️⃣ DBT Extensions](#2️⃣-dbt-extensions)
+  - [2️⃣ DBT Extensions](#2️⃣-dbt-extension)
   - [3️⃣ DBT Project Setup](#3️⃣-dbt-project-setup)
   - [4️⃣ DBT Source](#4️⃣-dbt-source)
   - [5️⃣ DBT Model](#5️⃣-dbt-model)
   - [6️⃣ DBT Test](#6️⃣-dbt-test)
+  - [7️⃣ DBT Seed](#7️⃣-dbt-seed)
+  - [8️⃣ DBT Jinja & Macros](#8️⃣-dbt-jinja-&-macros)
+  - [9️⃣ DBT Snapshot (SCD Type 2)](#9️⃣-dbt-snapshot-scd-type-2)
+  - [🔟 DBT Deployment)](#-dbt-deployment)
+- [dbt run vs dbt build](#-dbt-run-vs-dbt-build)
+- [Create Tables in Gold Layer](#-create-tables-in-gold-layer)
+- [Data Lineage Overview](#-data-lineage-overview)
 
 ---
 
