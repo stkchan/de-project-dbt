@@ -1348,6 +1348,10 @@ WHERE
 ORDER BY
   customer_sk
 ```
+**Query Result**
+
+![Result Query](https://github.com/stkchan/de-project-dbt/blob/b5c3a88804d13275a1846459180afb7a8ae3a6e5/images/Screenshot%202025-10-19%20111309.png)
+
 
 
 ---
