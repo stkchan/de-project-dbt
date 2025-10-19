@@ -1621,7 +1621,7 @@ This section describes the **end-to-end lineage flow** of the DBT project — fr
 
 ---
 ### Overall Data Flow
-    
+  ![Overall Data Flow](https://github.com/stkchan/de-project-dbt/blob/89dd6ce5c07d36ce153eec000c1277d9fbaf067c/images/Screenshot%202025-10-19%20132812.png)
 
 
 ### 🔹 1. Source Layer (`source` schema)
