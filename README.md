@@ -1627,20 +1627,20 @@ This section describes the **end-to-end lineage flow** of the DBT project — fr
 ### 🔹 1. Source Layer (`source` schema)
 Raw data is first loaded from CSV files into the Databricks catalog under the `source` schema.
 
-| **Table** | **Description** |
-|------------|----------------|
-| `dim_customer` | Raw customer information (names, gender, contact). |
-| `dim_product` | Product details including category and price. |
-| `fact_sales` | Transaction-level sales data. |
-| `fact_returns` | Return transaction data. |
-| `dim_store` | Store metadata including location and country. |
-| `dim_date` | Calendar dimension used for time-based analysis. |
+        | **Table** | **Description** |
+        |------------|----------------|
+        | `dim_customer` | Raw customer information (names, gender, contact). |
+        | `dim_product` | Product details including category and price. |
+        | `fact_sales` | Transaction-level sales data. |
+        | `fact_returns` | Return transaction data. |
+        | `dim_store` | Store metadata including location and country. |
+        | `dim_date` | Calendar dimension used for time-based analysis. |
 
-These are defined in **`models/source/sources.yml`**, using:
-```yaml
-database: '{{ target.catalog }}'
-schema: source
-
+        These are defined in **`models/source/sources.yml`**, using:
+        ```yaml
+        database: '{{ target.catalog }}'
+        schema: source
+        ```
 
 ---
 
