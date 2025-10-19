@@ -1498,7 +1498,7 @@ Switch targets with `--target dev` or `--target production`.
 
 ---
 
-## ⚙️ dbt run vs 🚀 dbt build
+## dbt run vs dbt build
 
 | **Feature** | **dbt run** | **dbt build** |
 |--------------|----------------|------------------|
@@ -1516,7 +1516,103 @@ Switch targets with `--target dev` or `--target production`.
 
 ---
 
+## Create Tables in Gold Layer
+1.  files for building models is inside `models/gold/` folder
+    -   `gold_gender_performance_each_product.sql`
 
+        ```sql
+        SELECT 
+            product_sk,
+            CASE
+            WHEN gender = 'F' THEN 'Female'
+            WHEN gender = 'M' THEN 'Male'
+            ELSE 'Unspecified'
+            END AS gender,
+            ROUND(SUM(total_sales), 2)      AS total_spent, 
+            ROUND(SUM(discount_amount), 2)  AS total_discount
+
+        FROM 
+            {{ ref('silver_sales_info') }}
+
+        GROUP BY 
+            product_sk,
+            gender
+
+        ORDER BY 
+            total_discount DESC;
+        ```
+    
+    -   `gold_loyaltier_performance_each_product.sql`
+
+        ```sql
+        SELECT 
+            product_sk, 
+            CASE
+                WHEN loyalty_tier = 'None' THEN 'Standard'
+                ELSE loyalty_tier
+            END AS loyalty_tier, 
+            ROUND(SUM(total_sales),2) AS total_spent, 
+            ROUND(AVG(total_sales),2) AS avg_transaction_value, 
+            COUNT(*) AS purchase_count 
+
+        FROM 
+            {{ ref('silver_sales_info') }}
+
+        GROUP BY 
+            product_sk, 
+            loyalty_tier
+
+        ORDER BY 
+            total_spent DESC;
+        ```
+
+    -   `gold_payment_method_total_spent_transactions.sql`
+
+        ```sql
+        SELECT 
+            payment_method,
+            ROUND(SUM(total_sales),2) AS total_spent, 
+            COUNT(*) AS purchase_count 
+
+        FROM 
+            {{ ref('silver_sales_info') }}
+
+        GROUP BY 
+            payment_method
+
+        ORDER BY 
+            purchase_count DESC;
+        ```
+
+2.  Step-by-Step
+    -   Write Gold Model Scripts
+    -   Run DBT to build these tables
+        ```bash
+        dbt run --select gold --target dev
+        ```
+    -   Inspect results in Databricks
+    -   Deploy to production
+        ```bash
+        dbt run --select gold --target production
+        ```
+
+
+3.  Folder Structure
+    ```bash
+    models/
+    ├─ source/
+    │   ├─ sources.yml
+    │   └─ ...
+    ├─ bronze/
+    │   ├─ bronze_dim_customer.sql
+    │   ├─ ...
+    ├─ silver/
+    │   └─ silver_sales_info.sql
+    └─ gold/
+        ├─ gold_gender_performance_each_product.sql
+        ├─ gold_loyaltier_performance_each_product.sql
+        └─ gold_payment_method_total_spent_transactions.sql
+    ```
 
 ---
 
