@@ -1613,6 +1613,34 @@ Switch targets with `--target dev` or `--target production`.
         ├─ gold_loyaltier_performance_each_product.sql
         └─ gold_payment_method_total_spent_transactions.sql
     ```
+---
+
+##  Data Lineage Overview
+
+This section describes the **end-to-end lineage flow** of the DBT project — from raw **source tables** to **gold analytical layers** — showing how data evolves through each transformation step.
+
+---
+### Overall Data Flow
+    ![Overall Data Flow](https://github.com/stkchan/de-project-dbt/blob/89dd6ce5c07d36ce153eec000c1277d9fbaf067c/images/Screenshot%202025-10-19%20132812.png)
+
+
+### 🔹 1. Source Layer (`source` schema)
+Raw data is first loaded from CSV files into the Databricks catalog under the `source` schema.
+
+| **Table** | **Description** |
+|------------|----------------|
+| `dim_customer` | Raw customer information (names, gender, contact). |
+| `dim_product` | Product details including category and price. |
+| `fact_sales` | Transaction-level sales data. |
+| `fact_returns` | Return transaction data. |
+| `dim_store` | Store metadata including location and country. |
+| `dim_date` | Calendar dimension used for time-based analysis. |
+
+These are defined in **`models/source/sources.yml`**, using:
+```yaml
+database: '{{ target.catalog }}'
+schema: source
+
 
 ---
 
